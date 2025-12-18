@@ -2,16 +2,13 @@ name: Docker Build and Push
 
 on:
   push:
-    branches: [ "main" ]        # rode ao fazer push na main
-  workflow_dispatch:            # permite rodar manualmente pela aba Actions
+    branches:
+      - main
+  workflow_dispatch:  # permite rodar manualmente na aba Actions
 
 jobs:
   docker:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-           packages: write           # necessário para publicar no GHCR
 
     steps:
       - name: Checkout
@@ -20,7 +17,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "10.0.x"
+          dotnet-version: '10.0.x'
 
       - name: Restore
         run: dotnet restore
@@ -45,3 +42,5 @@ jobs:
 
       - name: Push image
         run: |
+          IMAGE="ghcr.io/${{ github.repository }}/productapi:latest"
+          docker push "$IMAGE"
