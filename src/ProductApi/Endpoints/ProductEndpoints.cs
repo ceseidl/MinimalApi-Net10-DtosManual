@@ -1,9 +1,6 @@
+// src/ProductApi/Endpoints/ProductEndpoints.cs
 using Microsoft.AspNetCore.Http;
-
-// Este using precisa existir se você usa Product no "banco" em memória
 using ProductApi.Domain;
-
-// Se o método usar DTOs e mapeamento, importe também:
 using ProductApi.Dtos;
 using ProductApi.Mapping;
 
@@ -11,22 +8,27 @@ namespace ProductApi.Endpoints;
 
 public static class ProductEndpoints
 {
-    // Banco em memória simples só para exemplo
+    // "Banco" em memória para simplificar (sem EF)
     private static readonly List<Product> _db = new();
 
-    // Método de extensão sobre RouteGroupBuilder (observe o "this")
+    // Método de extensão para RouteGroupBuilder
     public static RouteGroupBuilder MapProductsEndpoints(this RouteGroupBuilder group)
     {
         // GET /products
-        group.MapGet("/", () => _db.Select(p => p.ToDto()));
+        group.MapGet("/", () =>
+        {
+            var response = _db.Select(p => p.ToDto());
+            return Results.Ok(response);
+        });
 
         // GET /products/{id}
         group.MapGet("/{id:guid}", (Guid id) =>
         {
             var p = _db.FirstOrDefault(x => x.Id == id);
-            return p is null
-                ? Results.NotFound(new { message = "Produto não encontrado." })
-                : Results.Ok(p.ToDto());
+            if (p is null)
+                return Results.NotFound(new { message = "Produto não encontrado." });
+
+            return Results.Ok(p.ToDto());
         }).WithName("GetProductById");
 
         // POST /products
@@ -35,7 +37,12 @@ public static class ProductEndpoints
             var entity = req.ToEntity();
             entity.Id = Guid.NewGuid();
             _db.Add(entity);
-            return Results.CreatedAtRoute("GetProductById", new { id = entity.Id }, entity.ToDto());
+
+            return Results.CreatedAtRoute(
+                routeName: "GetProductById",
+                routeValues: new { id = entity.Id },
+                value: entity.ToDto()
+            );
         });
 
         // PUT /products/{id}
@@ -50,6 +57,7 @@ public static class ProductEndpoints
 
             var updated = req.ToEntity();
             _db[idx] = updated;
+
             return Results.NoContent();
         });
 
@@ -57,7 +65,7 @@ public static class ProductEndpoints
         group.MapDelete("/{id:guid}", (Guid id) =>
         {
             var p = _db.FirstOrDefault(x => x.Id == id);
-            if (p is null)
+                       if (p is null)
                 return Results.NotFound(new { message = "Produto não encontrado." });
 
             _db.Remove(p);
@@ -65,4 +73,4 @@ public static class ProductEndpoints
         });
 
         return group;
-       }
+    }
