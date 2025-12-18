@@ -1,46 +1,23 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using FluentValidation;
-using FluentValidation.AspNetCore;
-using ProductApi.Data;
+
+// IMPORTANTE: este using precisa bater com o namespace do arquivo dos endpoints.
+using ProductApi.Endpoints;
+
+// Se quiser usar DTOs/mapeamento em outras partes:
 using ProductApi.Domain;
 using ProductApi.Dtos;
 using ProductApi.Mapping;
-using ProductApi.Repositories;
-using ProductApi.Validation;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Services
+// Swagger + health checks (opcional, mas útil)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-// EF Core (SQLite)
-var connectionString = builder.Configuration.GetConnectionString("Default") ?? "Data Source=app.db";
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(connectionString));
-
-// Repositório
-builder.Services.AddScoped<IProductRepository, EfCoreProductRepository>();
-
-// FluentValidation
-builder.Services.AddValidatorsFromAssemblyContaining<CreateProductValidator>();
-builder.Services.AddFluentValidationAutoValidation();
-
-// Health checks
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
-
-// Migrations at startup (simple)
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
-}
 
 if (app.Environment.IsDevelopment())
 {
@@ -48,10 +25,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Health checks endpoint (opcional)
 app.MapHealthChecks("/health");
 
+// Aqui chamamos o método de extensão definido em ProductEndpoints.
+// Se o using/namespace não bater, dá o erro que você viu.
 app.MapGroup("/products").MapProductsEndpoints();
 
 app.Run();
 
-public partial class Program { } // Expose Program for WebApplicationFactory
+// Necessário para testes de integração com WebApplicationFactory
+public partial class Program { }
+``
