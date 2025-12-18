@@ -1,4 +1,3 @@
-// src/ProductApi/Endpoints/ProductEndpoints.cs
 using Microsoft.AspNetCore.Http;
 using ProductApi.Domain;
 using ProductApi.Dtos;
@@ -8,10 +7,10 @@ namespace ProductApi.Endpoints;
 
 public static class ProductEndpoints
 {
-    // "Banco" em memória para simplificar (sem EF)
+    // "Banco" em memória para simplificar (sem EF/Core)
     private static readonly List<Product> _db = new();
 
-    // Método de extensão para RouteGroupBuilder
+    // Método de extensão sobre RouteGroupBuilder
     public static RouteGroupBuilder MapProductsEndpoints(this RouteGroupBuilder group)
     {
         // GET /products
@@ -26,7 +25,9 @@ public static class ProductEndpoints
         {
             var p = _db.FirstOrDefault(x => x.Id == id);
             if (p is null)
+            {
                 return Results.NotFound(new { message = "Produto não encontrado." });
+            }
 
             return Results.Ok(p.ToDto());
         }).WithName("GetProductById");
@@ -49,11 +50,15 @@ public static class ProductEndpoints
         group.MapPut("/{id:guid}", (Guid id, UpdateProductRequest req) =>
         {
             if (id != req.Id)
+            {
                 return Results.BadRequest(new { message = "O ID da rota e o ID do corpo devem ser iguais." });
+            }
 
             var idx = _db.FindIndex(x => x.Id == id);
             if (idx < 0)
+            {
                 return Results.NotFound(new { message = "Produto não encontrado." });
+            }
 
             var updated = req.ToEntity();
             _db[idx] = updated;
@@ -66,11 +71,14 @@ public static class ProductEndpoints
         {
             var p = _db.FirstOrDefault(x => x.Id == id);
                        if (p is null)
+            {
                 return Results.NotFound(new { message = "Produto não encontrado." });
+            }
 
             _db.Remove(p);
             return Results.NoContent();
         });
 
+        // Sempre retorne o group no final do método de extensão
         return group;
     }
